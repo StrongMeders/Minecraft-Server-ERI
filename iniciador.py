@@ -10,20 +10,27 @@ SERVER_DIR = os.path.join(os.getcwd(), "server")
 SERVER_JAR = "server.jar"
 MINECRAFT_PORT = 25565
 
-def git_pull():
-    print("[Git] Fazendo pull do repositório...")
-    result = subprocess.run("git pull", shell=True, cwd=os.getcwd())
-    if result.returncode != 0:
-        print("[Git] Erro ao fazer pull!")
+def git_sync():
+    print("[Git] Sincronizando repositório com origin/main...")
+    result_fetch = subprocess.run("git fetch origin", shell=True, cwd=os.getcwd())
+    if result_fetch.returncode != 0:
+        print("[Git] Erro ao fazer fetch!")
         exit(1)
 
-def iniciar_ngrok():
-    print("[Ngrok] Iniciando túnel TCP via pyngrok...")
-    tcp_tunnel = ngrok.connect(addr=MINECRAFT_PORT, proto="tcp")
-    print(f"[Ngrok] Endereço: {tcp_tunnel.public_url}")
-    return tcp_tunnel.public_url
+    result_reset = subprocess.run("git reset --hard origin/main", shell=True, cwd=os.getcwd())
+    if result_reset.returncode != 0:
+        print("[Git] Erro ao fazer reset!")
+        exit(1)
+    print("[Git] Repositório sincronizado com sucesso!")
 
-def iniciar_minecraft():
+
+# def iniciar_ngrok():
+#     print("[Ngrok] Iniciando túnel TCP via pyngrok...")
+#     tcp_tunnel = ngrok.connect(addr=MINECRAFT_PORT, proto="tcp")
+#     print(f"[Ngrok] Endereço: {tcp_tunnel.public_url}")
+#     return tcp_tunnel.public_url
+
+def iniciar_server():
     jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
     print(f"[Minecraft] Tentando rodar o jar: {jar_path}")
     if not os.path.isfile(jar_path):
@@ -44,8 +51,8 @@ def git_push(usuario):
 def main():
     usuario = getpass.getuser()
     git_pull()
-    iniciar_ngrok()
-    processo = iniciar_minecraft()
+    # iniciar_ngrok()
+    processo = iniciar_server()
     processo.wait()
     git_push(usuario)
 
