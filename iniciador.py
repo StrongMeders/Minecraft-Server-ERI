@@ -12,7 +12,8 @@ SERVER_DIR = os.path.join(os.getcwd(), "server")
 SERVER_JAR = "server.jar"
 MINECRAFT_PORT = 25565
 
-load_dotenv()   # Carrega as variáveis do .env
+# Carrega as variáveis do .env
+load_dotenv()   
 
 # def git_sync():
 #     print("[Git] Sincronizando repositório com origin/main...")
@@ -28,13 +29,7 @@ load_dotenv()   # Carrega as variáveis do .env
 #     print("[Git] Repositório sincronizado com sucesso!")
 
 
-# def iniciar_ngrok():
-#     print("[Ngrok] Iniciando túnel TCP via pyngrok...")
-#     tcp_tunnel = ngrok.connect(addr=MINECRAFT_PORT, proto="tcp")
-#     print(f"[Ngrok] Endereço: {tcp_tunnel.public_url}")
-#     return tcp_tunnel.public_url
-
-
+#Iniciar Ngrok
 def iniciar_ngrok():
     print("[Ngrok] Iniciando túnel TCP via pyngrok...")
 
@@ -46,7 +41,7 @@ def iniciar_ngrok():
     conf.get_default().auth_token = token
     tcp_tunnel = ngrok.connect(addr=25565, proto="tcp")
 
-    url = tcp_tunnel.public_url  # Exemplo: tcp://0.tcp.ngrok.io:19342
+    url = tcp_tunnel.public_url
     host, port = url.replace("tcp://", "").split(":")
 
     print("\n[Servidor Online]")
@@ -55,7 +50,6 @@ def iniciar_ngrok():
     return host, port
 
 #Iniciar servidor
-
 def iniciar_server():
     jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
     print(f"[Minecraft] Tentando rodar o jar: {jar_path}")
