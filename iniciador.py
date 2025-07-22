@@ -1,62 +1,38 @@
-import os
 import subprocess
-import datetime
-import time
 import requests
+import time
+import os
+from datetime import datetime
 
-# CONFIGURAÇÕES
-NGROK_AUTH_TOKEN = "SEU_TOKEN_AQUI"
-NGROK_REGION = "us"
-GITHUB_USERNAME = "seu-usuario"
-GITHUB_REPO = "nome-do-repo"
-GITHUB_BRANCH = "main"
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/SEU_WEBHOOK"
+usuario = os.getenv("USERNAME") or "user"
+hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
-# Função utilitária
-def run_cmd(cmd):
-    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-
-# 1. Puxar o último backup do GitHub
 print("🔄 Fazendo pull do backup...")
-run_cmd(["git", "pull", "origin", GITHUB_BRANCH])
+subprocess.run(["git", "pull"])
 
-# 2. Iniciar o servidor do Minecraft (modifique o nome do .jar conforme o seu)
 print("🚀 Iniciando servidor...")
-server_process = subprocess.Popen(["java", "-Xmx4G", "-Xms2G", "-jar", "server.jar", "nogui"])
+# Substitua abaixo se o seu .jar tiver outro nome
+subprocess.Popen(["java", "-Xmx2G", "-jar", "server.jar"])
 
-# 3. Esperar alguns segundos antes de subir o ngrok
-time.sleep(10)
-
-# 4. Subir o ngrok (porta 25565)
 print("🌐 Abrindo túnel com ngrok...")
-run_cmd(["ngrok", "config", "add-authtoken", NGROK_AUTH_TOKEN])
-ngrok_process = subprocess.Popen(["ngrok", "tcp", "25565", "--region", NGROK_REGION], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+subprocess.Popen(["ngrok", "tcp", "25565"])
 
-# 5. Esperar o ngrok inicializar e obter o endereço
 print("⏳ Aguardando ngrok iniciar...")
-time.sleep(8)
+time.sleep(5)
+
 try:
-    ngrok_data = requests.get("http://localhost:4040/api/tunnels").json()
-    public_url = ngrok_data['tunnels'][0]['public_url'].replace("tcp://", "")
+    res = requests.get("http://localhost:4040/api/tunnels").json()
+    public_url = res["tunnels"][0]["public_url"]
+    print("🔗 Endereço público:", public_url)
 except Exception as e:
-    public_url = "Erro ao obter porta"
-    print(f"⚠️ Erro ao buscar túnel ngrok: {e}")
+    print("⚠️ Erro ao buscar túnel ngrok:", e)
+    public_url = None
 
-# 6. Enviar IP para Discord
-msg = {
-    "content": f"🎮 Servidor Minecraft iniciado!\nEndereço: `{public_url}`"
-}
-requests.post(DISCORD_WEBHOOK_URL, json=msg)
-
-# 7. Aguardar processo de servidor terminar
 print("🕹️ Aguardando o servidor encerrar...")
-server_process.wait()
+input("Pressione ENTER quando quiser encerrar o servidor...")
 
-# 8. Após encerrar, salvar e enviar para o GitHub
 print("💾 Salvando e fazendo push...")
-timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-run_cmd(["git", "add", "."])
-run_cmd(["git", "commit", "-m", f"{timestamp}-I am the ALL RANGE"])
-run_cmd(["git", "push", "origin", GITHUB_BRANCH])
-
+subprocess.run(["git", "add", "."])
+subprocess.run(["git", "commit", "-m", f"{hora}-I am the ALL RANGE"])
+subprocess.run(["git", "push"])
 print("✅ Tudo finalizado com sucesso!")
