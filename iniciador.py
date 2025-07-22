@@ -50,7 +50,7 @@ def git_push(usuario):
 
 def main():
     usuario = getpass.getuser()
-    git_pull()
+    git_sync()
     # iniciar_ngrok()
     processo = iniciar_server()
     processo.wait()
