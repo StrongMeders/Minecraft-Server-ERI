@@ -1,4 +1,0 @@
-with open(WEBHOOK_PATH, "r") as f:
-    DISCORD_WEBHOOK = f.read().strip()
-
-print(f"[Debug] Webhook lido: {DISCORD_WEBHOOK}")  # Deve mostrar a URL completa
