@@ -62,8 +62,13 @@ def git_pull():
 def iniciar_minecraft():
     print("[Minecraft] Iniciando servidor Minecraft...")
     jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
-    processo = subprocess.Popen(f"java -jar {jar_path} nogui", cwd=SERVER_DIR, shell=True)
+    print(f"Executando jar: {jar_path}")
+    processo = subprocess.Popen(
+        ["java", "-jar", jar_path, "nogui"],
+        cwd=SERVER_DIR
+    )
     return processo
+
 
 def git_push(usuario):
     print("[Git] Fazendo commit e push do backup...")
