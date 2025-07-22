@@ -1,40 +1,53 @@
 import subprocess
 import time
 import os
-from pyngrok import ngrok
 from datetime import datetime
+import getpass
+from pyngrok import ngrok
 
-# Caminhos relativos
-PASTA_SERVIDOR = "server"
+# CONFIGURAÇÕES
+SERVER_DIR = os.path.join(os.getcwd(), "server")
 SERVER_JAR = "server.jar"
-PORTA_MINECRAFT = 25565
-
-def iniciar_ngrok():
-    print("[Ngrok] Iniciando túnel TCP via pyngrok...")
-    tunel = ngrok.connect(PORTA_MINECRAFT, "tcp")
-    print(f"[Ngrok] Endereço: {tunel.public_url}")
-    # (aqui futuramente podemos enviar isso pro Discord)
-    return tunel.public_url
-
-def iniciar_minecraft():
-    print("[Minecraft] Iniciando servidor Minecraft...")
-    caminho_jar = os.path.join(PASTA_SERVIDOR, SERVER_JAR)
-    subprocess.run(["java", "-Xmx2G", "-Xms2G", "-jar", caminho_jar, "nogui"], cwd=PASTA_SERVIDOR)
+MINECRAFT_PORT = 25565
 
 def git_pull():
     print("[Git] Fazendo pull do repositório...")
-    subprocess.run(["git", "pull"])
+    result = subprocess.run("git pull", shell=True, cwd=os.getcwd())
+    if result.returncode != 0:
+        print("[Git] Erro ao fazer pull!")
+        exit(1)
 
-def git_push():
+def iniciar_ngrok():
+    print("[Ngrok] Iniciando túnel TCP via pyngrok...")
+    tcp_tunnel = ngrok.connect(addr=MINECRAFT_PORT, proto="tcp")
+    print(f"[Ngrok] Endereço: {tcp_tunnel.public_url}")
+    return tcp_tunnel.public_url
+
+def iniciar_minecraft():
+    jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
+    print(f"[Minecraft] Tentando rodar o jar: {jar_path}")
+    if not os.path.isfile(jar_path):
+        print("[Erro] Arquivo server.jar não encontrado no caminho esperado.")
+        exit(1)
+    processo = subprocess.Popen(f'java -jar "{jar_path}" nogui', cwd=SERVER_DIR, shell=True)
+    return processo
+
+def git_push(usuario):
     print("[Git] Fazendo commit e push do backup...")
-    data_hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    subprocess.run(["git", "add", "."])
-    subprocess.run(["git", "commit", "-m", f"{data_hora}_backup"])
-    subprocess.run(["git", "push"])
+    datahora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    msg_commit = f"{datahora}-{usuario}"
+    subprocess.run("git add .", shell=True, cwd=os.getcwd())
+    subprocess.run(f'git commit -m "{msg_commit}"', shell=True, cwd=os.getcwd())
+    subprocess.run("git push", shell=True, cwd=os.getcwd())
     print("[Git] Backup enviado!")
 
-# Execução principal
-git_pull()
-url_ngrok = iniciar_ngrok()
-iniciar_minecraft()
-git_push()
+def main():
+    usuario = getpass.getuser()
+    git_pull()
+    iniciar_ngrok()
+    processo = iniciar_minecraft()
+    processo.wait()
+    git_push(usuario)
+
+if __name__ == "__main__":
+    main()
