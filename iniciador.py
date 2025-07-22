@@ -18,10 +18,8 @@ def iniciar_ngrok():
 
 def iniciar_minecraft():
     print("[Minecraft] Iniciando servidor Minecraft...")
-    jar_path = os.path.join(PASTA_SERVIDOR, SERVER_JAR)
-    print(f"Caminho absoluto do JAR: {jar_path}")
-    # caminho_jar = os.path.join(PASTA_SERVIDOR, JAR_NAME)
-    # subprocess.run(["java", "-Xmx2G", "-Xms2G", "-jar", caminho_jar, "nogui"], cwd=PASTA_SERVIDOR)
+    caminho_jar = os.path.join(PASTA_SERVIDOR, SERVER_JAR)
+    subprocess.run(["java", "-Xmx2G", "-Xms2G", "-jar", caminho_jar, "nogui"], cwd=PASTA_SERVIDOR)
 
 def git_pull():
     print("[Git] Fazendo pull do repositório...")
