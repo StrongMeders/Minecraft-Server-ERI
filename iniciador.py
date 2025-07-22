@@ -6,14 +6,14 @@ import getpass
 from pyngrok import ngrok, conf
 from dotenv import load_dotenv
 
+# Carrega as variáveis do .env
+load_dotenv()   
 
 # CONFIGURAÇÕES
 SERVER_DIR = os.path.join(os.getcwd(), "server")
 SERVER_JAR = "server.jar"
 MINECRAFT_PORT = 25565
 
-# Carrega as variáveis do .env
-load_dotenv()   
 
 # def git_sync():
 #     print("[Git] Sincronizando repositório com origin/main...")
