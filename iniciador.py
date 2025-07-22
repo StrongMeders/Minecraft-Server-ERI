@@ -32,6 +32,13 @@ def git_pull():
         print("[Git] Erro ao fazer pull!")
         exit(1)
 
+def iniciar_ngrok():
+    print("[Ngrok] Iniciando túnel TCP em nova janela CMD...")
+    comando = f'start cmd /k "{NGROK_PATH} tcp {MINECRAFT_PORT}"'
+    subprocess.Popen(comando, shell=True)
+    time.sleep(5)
+
+
 # def iniciar_ngrok():
 #     print("[Ngrok] Iniciando túnel TCP...")
 #     subprocess.Popen(f"{NGROK_PATH} tcp {MINECRAFT_PORT}", shell=True)
