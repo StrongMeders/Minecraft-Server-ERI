@@ -6,7 +6,7 @@ from datetime import datetime
 
 # Caminhos relativos
 PASTA_SERVIDOR = "server"
-JAR_NAME = "server.jar"
+SERVER_JAR = "server.jar"
 PORTA_MINECRAFT = 25565
 
 def iniciar_ngrok():
@@ -18,8 +18,10 @@ def iniciar_ngrok():
 
 def iniciar_minecraft():
     print("[Minecraft] Iniciando servidor Minecraft...")
-    caminho_jar = os.path.join(PASTA_SERVIDOR, JAR_NAME)
-    subprocess.run(["java", "-Xmx2G", "-Xms2G", "-jar", caminho_jar, "nogui"], cwd=PASTA_SERVIDOR)
+    jar_path = os.path.join(PASTA_SERVIDOR, SERVER_JAR)
+    print(f"Caminho absoluto do JAR: {jar_path}")
+    # caminho_jar = os.path.join(PASTA_SERVIDOR, JAR_NAME)
+    # subprocess.run(["java", "-Xmx2G", "-Xms2G", "-jar", caminho_jar, "nogui"], cwd=PASTA_SERVIDOR)
 
 def git_pull():
     print("[Git] Fazendo pull do repositório...")
