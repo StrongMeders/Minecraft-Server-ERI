@@ -1,59 +1,62 @@
-import subprocess
-import time
 import os
-from datetime import datetime
-import getpass
-from pyngrok import ngrok
+import subprocess
+import datetime
+import time
+import requests
 
 # CONFIGURAÇÕES
-SERVER_DIR = os.path.join(os.getcwd(), "server")
-SERVER_JAR = "server.jar"
-MINECRAFT_PORT = 25565
+NGROK_AUTH_TOKEN = "SEU_TOKEN_AQUI"
+NGROK_REGION = "us"
+GITHUB_USERNAME = "seu-usuario"
+GITHUB_REPO = "nome-do-repo"
+GITHUB_BRANCH = "main"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/SEU_WEBHOOK"
 
-def git_sync():
-    print("[Git] Sincronizando repositório com origin/main...")
-    result_fetch = subprocess.run("git fetch origin", shell=True, cwd=os.getcwd())
-    if result_fetch.returncode != 0:
-        print("[Git] Erro ao fazer fetch!")
-        exit(1)
+# Função utilitária
+def run_cmd(cmd):
+    return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    result_reset = subprocess.run("git reset --hard origin/main", shell=True, cwd=os.getcwd())
-    if result_reset.returncode != 0:
-        print("[Git] Erro ao fazer reset!")
-        exit(1)
-    print("[Git] Repositório sincronizado com sucesso!")
+# 1. Puxar o último backup do GitHub
+print("🔄 Fazendo pull do backup...")
+run_cmd(["git", "pull", "origin", GITHUB_BRANCH])
 
-def iniciar_ngrok():
-    print("[Ngrok] Iniciando túnel TCP via pyngrok...")
-    tcp_tunnel = ngrok.connect(addr=MINECRAFT_PORT, proto="tcp")
-    print(f"[Ngrok] Endereço: {tcp_tunnel.public_url}")
-    return tcp_tunnel.public_url
+# 2. Iniciar o servidor do Minecraft (modifique o nome do .jar conforme o seu)
+print("🚀 Iniciando servidor...")
+server_process = subprocess.Popen(["java", "-Xmx4G", "-Xms2G", "-jar", "server.jar", "nogui"])
 
-def iniciar_minecraft():
-    jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
-    print(f"[Minecraft] Tentando rodar o jar: {jar_path}")
-    if not os.path.isfile(jar_path):
-        print("[Erro] Arquivo server.jar não encontrado no caminho esperado.")
-        exit(1)
-    processo = subprocess.Popen(f'java -jar "{jar_path}" nogui', cwd=SERVER_DIR, shell=True)
-    return processo
+# 3. Esperar alguns segundos antes de subir o ngrok
+time.sleep(10)
 
-def git_push(usuario):
-    print("[Git] Fazendo commit e push do backup...")
-    datahora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    msg_commit = f"{datahora}-{usuario}"
-    subprocess.run("git add .", shell=True, cwd=os.getcwd())
-    subprocess.run(f'git commit -m "{msg_commit}"', shell=True, cwd=os.getcwd())
-    subprocess.run("git push", shell=True, cwd=os.getcwd())
-    print("[Git] Backup enviado!")
+# 4. Subir o ngrok (porta 25565)
+print("🌐 Abrindo túnel com ngrok...")
+run_cmd(["ngrok", "config", "add-authtoken", NGROK_AUTH_TOKEN])
+ngrok_process = subprocess.Popen(["ngrok", "tcp", "25565", "--region", NGROK_REGION], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-def main():
-    usuario = getpass.getuser()
-    git_sync()
-    iniciar_ngrok()
-    processo = iniciar_minecraft()
-    processo.wait()
-    git_push(usuario)
+# 5. Esperar o ngrok inicializar e obter o endereço
+print("⏳ Aguardando ngrok iniciar...")
+time.sleep(8)
+try:
+    ngrok_data = requests.get("http://localhost:4040/api/tunnels").json()
+    public_url = ngrok_data['tunnels'][0]['public_url'].replace("tcp://", "")
+except Exception as e:
+    public_url = "Erro ao obter porta"
+    print(f"⚠️ Erro ao buscar túnel ngrok: {e}")
 
-if __name__ == "__main__":
-    main()
+# 6. Enviar IP para Discord
+msg = {
+    "content": f"🎮 Servidor Minecraft iniciado!\nEndereço: `{public_url}`"
+}
+requests.post(DISCORD_WEBHOOK_URL, json=msg)
+
+# 7. Aguardar processo de servidor terminar
+print("🕹️ Aguardando o servidor encerrar...")
+server_process.wait()
+
+# 8. Após encerrar, salvar e enviar para o GitHub
+print("💾 Salvando e fazendo push...")
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+run_cmd(["git", "add", "."])
+run_cmd(["git", "commit", "-m", f"{timestamp}-I am the ALL RANGE"])
+run_cmd(["git", "push", "origin", GITHUB_BRANCH])
+
+print("✅ Tudo finalizado com sucesso!")
