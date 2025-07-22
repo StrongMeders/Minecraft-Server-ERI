@@ -1,38 +1,68 @@
 import subprocess
-import requests
 import time
 import os
 from datetime import datetime
+import getpass
+from pyngrok import ngrok
+from bot import DiscordBot
 
-usuario = os.getenv("USERNAME") or "user"
-hora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+# CONFIGURAÇÕES
+SERVER_DIR = os.path.join(os.getcwd(), "server")
+SERVER_JAR = "server.jar"
+MINECRAFT_PORT = 25565
 
-print("🔄 Fazendo pull do backup...")
-subprocess.run(["git", "pull"])
+def git_sync():
+    print("[Git] Sincronizando repositório com origin/main...")
+    result_fetch = subprocess.run("git fetch origin", shell=True, cwd=os.getcwd())
+    if result_fetch.returncode != 0:
+        print("[Git] Erro ao fazer fetch!")
+        exit(1)
 
-print("🚀 Iniciando servidor...")
-# Substitua abaixo se o seu .jar tiver outro nome
-subprocess.Popen(["java", "-Xmx2G", "-jar", "server.jar"])
+    result_reset = subprocess.run("git reset --hard origin/main", shell=True, cwd=os.getcwd())
+    if result_reset.returncode != 0:
+        print("[Git] Erro ao fazer reset!")
+        exit(1)
+    print("[Git] Repositório sincronizado com sucesso!")
 
-print("🌐 Abrindo túnel com ngrok...")
-subprocess.Popen(["ngrok", "tcp", "25565"])
+def iniciar_ngrok():
+    print("[Ngrok] Iniciando túnel TCP via pyngrok...")
+    tcp_tunnel = ngrok.connect(addr=MINECRAFT_PORT, proto="tcp")
+    print(f"[Ngrok] Endereço: {tcp_tunnel.public_url}")
+    return tcp_tunnel.public_url
 
-print("⏳ Aguardando ngrok iniciar...")
-time.sleep(5)
+def iniciar_minecraft():
+    jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
+    print(f"[Minecraft] Tentando rodar o jar: {jar_path}")
+    if not os.path.isfile(jar_path):
+        print("[Erro] Arquivo server.jar não encontrado no caminho esperado.")
+        exit(1)
+    processo = subprocess.Popen(f'java -jar "{jar_path}" nogui', cwd=SERVER_DIR, shell=True)
+    return processo
 
-try:
-    res = requests.get("http://localhost:4040/api/tunnels").json()
-    public_url = res["tunnels"][0]["public_url"]
-    print("🔗 Endereço público:", public_url)
-except Exception as e:
-    print("⚠️ Erro ao buscar túnel ngrok:", e)
-    public_url = None
+def git_push(usuario):
+    print("[Git] Fazendo commit e push do backup...")
+    datahora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    msg_commit = f"{datahora}-{usuario}"
+    subprocess.run("git add .", shell=True, cwd=os.getcwd())
+    subprocess.run(f'git commit -m "{msg_commit}"', shell=True, cwd=os.getcwd())
+    subprocess.run("git push", shell=True, cwd=os.getcwd())
+    print("[Git] Backup enviado!")
 
-print("🕹️ Aguardando o servidor encerrar...")
-input("Pressione ENTER quando quiser encerrar o servidor...")
+def main():
+    usuario = getpass.getuser()
+    git_sync()
 
-print("💾 Salvando e fazendo push...")
-subprocess.run(["git", "add", "."])
-subprocess.run(["git", "commit", "-m", f"{hora}-I am the ALL RANGE"])
-subprocess.run(["git", "push"])
-print("✅ Tudo finalizado com sucesso!")
+    tunnel_url = iniciar_ngrok()
+    ip = tunnel_url.replace("tcp://", "")
+    mensagem = f"🎮 Novo IP do servidor Minecraft: `{ip}`"
+
+    bot = DiscordBot()
+    bot.rodar(mensagem)
+
+    processo = iniciar_minecraft()
+    processo.wait()
+
+    git_push(usuario)
+
+if __name__ == "__main__":
+    main()
