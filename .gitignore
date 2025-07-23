@@ -1,4 +1,6 @@
-.env
 /__pycache__/
+build
+.env
 bot.py
+MinecraftLauncher.spe
 ngrok.exe
