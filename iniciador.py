@@ -12,18 +12,11 @@ from datetime import datetime
 RESET = "\033[0m"
 
 # Cores de texto (foreground)
-ORANGE = "\033[38;5;208m"
+ORANGE_GIT = "\033[38;5;208m"
 DISCORD_BLUE = "\033[38;5;63m"
 NGROK_BLUE = "\033[38;5;27m"
 MINECRAFT_GREEN = "\033[32m"
 CRIMSON_RED = "\033[38;5;124m"
-
-# Cores em negrito (para maior destaque)
-BOLD_ORANGE = "\033[1;38;5;208m"
-BOLD_DISCORD_BLUE = "\033[1;38;5;63m"
-BOLD_NGROK_BLUE = "\033[1;38;5;27m"
-BOLD_MINECRAFT_GREEN = "\033[1;32m"
-BOLD_CRIMSON_RED = "\033[1;38;5;124m"
 
 # --- Carrega as variáveis do .env ---
 load_dotenv(override=True, dotenv_path=find_dotenv())
@@ -38,8 +31,8 @@ TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CHANNEL_ID = int(os.getenv("DISCORD_CHANNEL_ID"))
 
 # --- Depuração de Carregamento de Variáveis ---
-print(f"{BOLD_DISCORD_BLUE}TOKEN lido: {TOKEN}{RESET}")
-print(f"{BOLD_DISCORD_BLUE}CHANNEL_ID lido: {CHANNEL_ID}{RESET}")
+print(f"{DISCORD_BLUE}🔑 TOKEN lido: {RESET}{TOKEN}")
+print(f"{DISCORD_BLUE}🆔 CHANNEL_ID lido: {RESET}{CHANNEL_ID}")
 
 # --- Variáveis Globais ---
 ip_global = None
@@ -54,35 +47,35 @@ client = discord.Client(intents=intents)
 
 # --- Funções Git ---
 def git_sync():
-    print(f"{BOLD_ORANGE}[Git] Sincronizando repositório com origin/main...{RESET}")
+    print(f"{ORANGE_GIT}🔄 [Git]{RESET} Sincronizando repositório com origin/main...")
     try:
         subprocess.run("git fetch origin", shell=True, cwd=os.getcwd(), check=True)
         subprocess.run("git reset --hard origin/main", shell=True, cwd=os.getcwd(), check=True)
-        print(f"{BOLD_ORANGE}[Git] Repositório sincronizado com sucesso!{RESET}")
+        print(f"{ORANGE_GIT}✅ [Git]{RESET} Repositório sincronizado com sucesso!")
     except subprocess.CalledProcessError as e:
-        print(f"{ORANGE}[Git] Erro ao sincronizar: {e}{RESET}")
+        print(f"{ORANGE_GIT}❌ [Git]{RESET} Erro ao sincronizar: {e}")
         exit(1)
 
 def git_push(usuario):
-    print(f"{BOLD_ORANGE}[Git] Fazendo commit e push do backup...{RESET}")
+    print(f"{ORANGE_GIT}⬆️ [Git]{RESET} Fazendo commit e push do backup...")
     datahora = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     msg_commit = f"{datahora}-{usuario}"
     try:
         subprocess.run("git add .", shell=True, cwd=os.getcwd(), check=True)
         subprocess.run(f'git commit -m "{msg_commit}"', shell=True, cwd=os.getcwd(), check=True)
         subprocess.run("git push", shell=True, cwd=os.getcwd(), check=True)
-        print(f"{BOLD_ORANGE}[Git] Backup enviado!{RESET}")
+        print(f"{ORANGE_GIT}📦 [Git]{RESET} Backup enviado!")
     except subprocess.CalledProcessError as e:
-        print(f"{ORANGE}[Git] Erro ao fazer commit/push: {e}{RESET}")
+        print(f"{ORANGE_GIT}⚠️ [Git]{RESET} Erro ao fazer commit/push: {e}")
     except Exception as e:
-        print(f"{ORANGE}[Git] Erro inesperado no Git Push: {e}{RESET}")
+        print(f"{ORANGE_GIT}🔥 [Git]{RESET} Erro inesperado no Git Push: {e}")
 
 # --- Iniciar Ngrok ---
 def iniciar_ngrok():
-    print(f"{BOLD_NGROK_BLUE}[Ngrok] Iniciando túnel TCP via pyngrok...{RESET}")
+    print(f"{NGROK_BLUE}🌐 [Ngrok]{RESET} Iniciando túnel TCP via pyngrok...")
     token = os.getenv("NGROK_AUTHTOKEN")
     if not token:
-        print(f"{NGROK_BLUE}[Ngrok] Token não encontrado nas variáveis de ambiente!{RESET}")
+        print(f"{NGROK_BLUE}⛔ [Ngrok]{RESET} Token não encontrado nas variáveis de ambiente!")
         exit(1)
 
     conf.get_default().auth_token = token
@@ -90,43 +83,42 @@ def iniciar_ngrok():
     url = tcp_tunnel.public_url
     host, port = url.replace("tcp://", "").split(":")
 
-    print(f"\n{BOLD_MINECRAFT_GREEN}[Servidor Online]{RESET}")
-    print(f"{BOLD_MINECRAFT_GREEN}ip: {host}:{port}\n{RESET}")
+    print(f"\n{MINECRAFT_GREEN}🌍 [Servidor Online]{RESET}")
+    print(f"   IP: {host}:{port}\n")
+
     return host, port
 
 # --- Bot Discord (on_ready para mensagem online inicial) ---
 @client.event
 async def on_ready():
-    # Nick do bot em carmesim/vinho
-    print(f"{BOLD_DISCORD_BLUE}[Bot] Logado como {BOLD_CRIMSON_RED}{client.user}{BOLD_DISCORD_BLUE}.{RESET}")
+    print(f"{DISCORD_BLUE}🤖 [Bot]{RESET} Logado como {CRIMSON_RED}{client.user}{RESET}.")
     canal = client.get_channel(CHANNEL_ID)
     if canal is None:
-        print(f"{DISCORD_BLUE}[Erro] Canal não encontrado.{RESET}")
+        print(f"{DISCORD_BLUE}🚫 [Erro]{RESET} Canal não encontrado.")
         return
 
     async for msg in canal.history(limit=20):
         if msg.author == client.user:
             await msg.delete()
-            print(f"{DISCORD_BLUE}[Bot] Mensagem anterior apagada.{RESET}")
+            print(f"{DISCORD_BLUE}🗑️ [Bot]{RESET} Mensagem anterior apagada.")
             break
 
-    await canal.send(f"[Servidor Online]\nip: {ip_global}:{port_global}")
-    print(f"{BOLD_DISCORD_BLUE}[Bot] Mensagem enviada.{RESET}")
+    await canal.send(f"✅ **[Servidor Online]**\n**IP:** `{ip_global}:{port_global}`")
+    print(f"{DISCORD_BLUE}✉️ [Bot]{RESET} Mensagem enviada.")
     await asyncio.sleep(5)
     await client.close()
-    print(f"{BOLD_DISCORD_BLUE}[Bot] Cliente Discord finalizado.{RESET}")
+    print(f"{DISCORD_BLUE}👋 [Bot]{RESET} Cliente Discord finalizado.")
 
 # --- Iniciar servidor Minecraft ---
 def iniciar_server():
     global minecraft_process
 
     jar_path = os.path.join(SERVER_DIR, SERVER_JAR)
-    print(f"{BOLD_MINECRAFT_GREEN}[Minecraft] Tentando rodar o jar: {jar_path}{RESET}")
+    print(f"{MINECRAFT_GREEN}⛏️ [Minecraft]{RESET} Tentando rodar o jar: {jar_path}")
     if not os.path.isfile(jar_path):
-        print(f"{MINECRAFT_GREEN}[Erro] Arquivo server.jar não encontrado no caminho esperado.{RESET}")
+        print(f"{MINECRAFT_GREEN}🛑 [Erro]{RESET} Arquivo server.jar não encontrado no caminho esperado.")
         exit(1)
 
-    # Use stdin=subprocess.PIPE e text=True para enviar comandos
     minecraft_process = subprocess.Popen(
         f'java -jar "{jar_path}" nogui',
         cwd=SERVER_DIR,
@@ -140,21 +132,21 @@ def iniciar_server():
 async def auto_save_task():
     global minecraft_process
 
-    print(f"{MINECRAFT_GREEN}[AutoSave] Aguardando {SAVE_INTERVAL_MINUTES} minutos antes do primeiro save...{RESET}")
+    print(f"{MINECRAFT_GREEN}⏳ [AutoSave]{RESET} Aguardando {SAVE_INTERVAL_MINUTES} minutos antes do primeiro save...")
     await asyncio.sleep(SAVE_INTERVAL_MINUTES * 60)
 
     while minecraft_process and minecraft_process.poll() is None:
-        print(f"{MINECRAFT_GREEN}[AutoSave] Enviando comando /save-all para o servidor...{RESET}")
+        print(f"{MINECRAFT_GREEN}💾 [AutoSave]{RESET} Enviando comando /save-all para o servidor...")
         try:
             minecraft_process.stdin.write("save-all\n")
             minecraft_process.stdin.flush()
-            print(f"{MINECRAFT_GREEN}[AutoSave] Comando /save-all enviado.{RESET}")
+            print(f"{MINECRAFT_GREEN}✔️ [AutoSave]{RESET} Comando /save-all enviado.")
         except Exception as e:
-            print(f"{MINECRAFT_GREEN}[AutoSave] Erro ao enviar comando /save-all: {e}{RESET}")
+            print(f"{MINECRAFT_GREEN}❌ [AutoSave]{RESET} Erro ao enviar comando /save-all: {e}")
             break
 
         await asyncio.sleep(SAVE_INTERVAL_MINUTES * 60)
-    print(f"{MINECRAFT_GREEN}[AutoSave] Tarefa de auto-save finalizada (servidor fechou).{RESET}")
+    print(f"{MINECRAFT_GREEN}🏁 [AutoSave]{RESET} Tarefa de auto-save finalizada (servidor fechou).")
 
 # --- Função Principal ---
 async def main():
@@ -167,30 +159,29 @@ async def main():
     ip_global = host
     port_global = port
 
-    print(f"{BOLD_DISCORD_BLUE}[Bot] Iniciando cliente Discord...{RESET}")
+    print(f"{DISCORD_BLUE}🚀 [Bot]{RESET} Iniciando cliente Discord...")
     await client.start(TOKEN)
 
-    print(f"{BOLD_MINECRAFT_GREEN}[Minecraft] Iniciando servidor...{RESET}")
+    print(f"{MINECRAFT_GREEN}▶️ [Minecraft]{RESET} Iniciando servidor...")
     minecraft_process = iniciar_server()
 
     auto_save_task_handle = asyncio.create_task(auto_save_task())
 
     await asyncio.to_thread(minecraft_process.wait)
 
-    print(f"{BOLD_MINECRAFT_GREEN}[Minecraft] Servidor Minecraft fechado.{RESET}")
+    print(f"{MINECRAFT_GREEN}⏹️ [Minecraft]{RESET} Servidor Minecraft fechado.")
 
     if not auto_save_task_handle.done():
         auto_save_task_handle.cancel()
         try:
             await auto_save_task_handle
         except asyncio.CancelledError:
-            print(f"{MINECRAFT_GREEN}[AutoSave] Tarefa de auto-save cancelada.{RESET}")
+            print(f"{MINECRAFT_GREEN}↩️ [AutoSave]{RESET} Tarefa de auto-save cancelada.")
 
     git_push(usuario)
 
 if __name__ == "__main__":
-    # Habilitar suporte a cores ANSI no Windows
     if os.name == 'nt':
-        os.system('color') # Isso ativa o processamento de sequências ANSI
+        os.system('color') # Ativa o processamento de sequências ANSI no Windows
 
     asyncio.run(main())
